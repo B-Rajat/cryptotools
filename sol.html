@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Solana Base58 Private Key to Address</title>
+  <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.73.1/lib/index.iife.min.js"></script>
+</head>
+<body>
+  <h1>Get Solana Public Address from Base58 Private Key</h1>
+  <label for="privateKeyInput">Enter Base58 Encoded Private Key:</label><br/>
+  <input type="text" id="privateKeyInput" size="80" placeholder="Paste your private key here" /><br/><br/>
+  <button id="convertBtn">Get Public Address</button>
+
+  <h3>Public Key (Address):</h3>
+  <pre id="publicKey"></pre>
+
+  <script>
+    // Simple base58 decode implementation for Solana keys
+    const BASE58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+    function base58Decode(str) {
+      const base = 58n;
+      let num = 0n;
+      for (const char of str) {
+        const digit = BigInt(BASE58_ALPHABET.indexOf(char));
+        if (digit === -1n) throw new Error('Invalid base58 character');
+        num = num * base + digit;
+      }
+      let bytes = [];
+      while (num > 0) {
+        bytes.unshift(Number(num % 256n));
+        num = num / 256n;
+      }
+      // Add leading zero bytes
+      for (const c of str) {
+        if (c === '1') bytes.unshift(0);
+        else break;
+      }
+      return new Uint8Array(bytes);
+    }
+
+    const { Keypair } = solanaWeb3;
+
+    document.getElementById('convertBtn').addEventListener('click', () => {
+      const base58PrivateKey = document.getElementById('privateKeyInput').value.trim();
+      try {
+        const secretKey = base58Decode(base58PrivateKey);
+
+        if (secretKey.length !== 64) {
+          throw new Error('Invalid private key length. Expected 64 bytes after base58 decoding.');
+        }
+
+        const keypair = Keypair.fromSecretKey(secretKey);
+        const pubkey = keypair.publicKey.toBase58();
+
+        document.getElementById('publicKey').textContent = pubkey;
+      } catch (err) {
+        document.getElementById('publicKey').textContent = 'Error: ' + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
